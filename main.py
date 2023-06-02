@@ -6,7 +6,7 @@ if __name__ == '__main__':
     watch = True
     deviceList = None
 
-    if sys.argc > 1:
+    if len(sys.argv) > 1:
         if sys.argv[1] == "--watch":
             watch = True
 
@@ -17,24 +17,40 @@ if __name__ == '__main__':
     deviceListResponse = Govee.makeRequest("devices")
 
     if deviceListResponse['code'] != 200:
-        Govee.log("WARN", "Got {0} response code. Failed to fetch device list".format(deviceListResponse['code']))
+        Govee.log("ERROR", "Got {0} response code. Failed to fetch device list".format(deviceListResponse['code']))
         exit(1)
 
     Govee.setDeviceList(deviceListResponse)
+
+    Govee.listControllableDevices()
 
     try:
         while watch:
             device = input("Please select a device to control: ").lower()
             action = input("Please select the action to take: ").lower()
+            argument = input("Please select the argument for the action, if applicable: ").lower()
 
             deviceList = Govee.getDeviceList()
 
             for d in deviceList:
                 if device == d['deviceName'].lower():
                     if action in d['supportCmds']:
-                        Govee.makeRequest()
-
-
+                        print({
+                            "device": d['device'],
+                            "model": d['model'],
+                            "cmd": {
+                                "name": action,
+                                "value": argument
+                            }
+                        })
+                        Govee.makeRequest('devices/control', {
+                            "device": d['device'],
+                            "model": d['model'],
+                            "cmd": {
+                                "name": action,
+                                "value": argument
+                            }
+                        })
 
     except KeyboardInterrupt:
         Govee.log("INFO", "Quitting. Goodbye!")

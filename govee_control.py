@@ -1,10 +1,12 @@
-import requests
 from datetime import datetime
+import requests
+import json
+import os
 
 class Govee():
 
     def __init__(self):
-        self.apikey = ""
+        self.apikey = os.getenv("GOVEE_API_KEY")
         self.baseURL = "https://developer-api.govee.com/v1/"
         self.deviceList = {}
         self.legalActions = {
@@ -29,7 +31,7 @@ class Govee():
                 "type": "GET"
             }
         }
-    
+
     def toggleDeviceState(self, device, cmd, options=None):
 
         if not device or type(device) != dict:
@@ -45,9 +47,20 @@ class Govee():
         
         if not device['controllable']:
             self.log("ERROR", "Unable to toggle device state. Device cannot be controlled via API.")
-        
-        
-    
+
+    def listControllableDevices(self):
+
+        self.log("INFO", "Emitting list of controllable devices.")
+
+        for d in self.deviceList:
+            if d['controllable']:
+                print('Device Name: {0} Legal Actions: {1}'.format(d['deviceName'], d['supportCmds']))
+
+        return True
+
+    def getDeviceList(self):
+        return self.deviceList
+
     def setDeviceList(self, deviceObject):
         self.log("INFO", "Setting new device list")
         self.deviceList = deviceObject['data']['devices']
@@ -70,12 +83,18 @@ class Govee():
                 if not body:
                     self.log("ERROR", "Unable to POST without a request body.")
 
-                jsonResponse = requests.post(self.baseURL + action, headers=self.legalActions[action]["headers"], data=body)
+                body = json.dumps(body)
+
+                jsonResponse = requests.put(self.baseURL + action, headers=self.legalActions[action]["headers"], data=body)
         except Exception as error:
             self.log("ERROR", "Unable to complete request due to the following error: {0}".format(error))
             return False
-        
-        return jsonResponse.json()
+
+        if jsonResponse.status_code != 200:
+            self.log("ERROR", "Failed to make Govee request: {0} {1}".format(jsonResponse.status_code, jsonResponse.content))
+            return False
+        else:
+            return jsonResponse.json()
     
     #Move this into a utils file.
     def log(self, level, msg):
