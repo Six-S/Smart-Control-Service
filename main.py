@@ -24,6 +24,8 @@ if __name__ == '__main__':
 
     Govee.listControllableDevices()
 
+    Govee.getDeviceState("H6003_livingroom_1")
+
     try:
         while watch:
             device = input("Please select a device to control: ").lower()
