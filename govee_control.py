@@ -61,33 +61,48 @@ class Govee():
     def getDeviceList(self):
         return self.deviceList
 
-    def getDeviceState(self, deviceName):
+    #Gets a device by name
+    def getOneDevice(self, name):
+        self.log("INFO", "Fetching single device")
+
+        for d in self.deviceList:
+            print("HERE IS OUR CURRENT DEVICE: ", d)
+            if d['deviceName'] == name:
+                return d
+
+        self.log("WARN", "Device not found")
+        return False
+
+
+    def getDeviceState(self, mac, model):
         self.log("INFO", "Fetching device state.")
 
         if not self.deviceList:
             self.log("WARN", "Cannot fetch device state: device list has not been fetched.")
             return False
 
-        print("Returning details for device: ", self.deviceList)
+        self.log("INFO", "Returning details for device: ", model)
 
-        return self.deviceList
+        state = self.makeRequest('devices/state', {
+            "device": mac,
+            "model": model
+        })
+
+        return state
 
     def setDeviceList(self, deviceObject):
         self.log("INFO", "Setting new device list")
         self.deviceList = deviceObject['data']['devices']
         return self.deviceList
 
-    def manageMultipleDevices(self, deviceList):
+    def manageMultipleDevices(self, deviceList, action, argument):
         self.log("INFO", "Attempting to manage multiple devices.")
 
         if not deviceList or not isinstance(deviceList, dict):
             self.log("WARN", "Cannot manage multipe devices: Device list missing or not a dictionary")
             return False
 
-        action = ""
-        argument = ""
-
-        for d in deviceList:
+        for d in self.deviceList:
             print("HERE IS OUR CURRENT DEVICE: ", deviceList)
             self.makeRequest('devices/control', {
                             "device": d['device'],
